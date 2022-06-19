@@ -5,7 +5,9 @@ const ejs=require("ejs");
 const bodyParser=require("body-parser");
 const mongoose=require("mongoose");
 // const momgooseEncryption=require("mongoose-encryption");
-const md5=require("md5");
+// const md5=require("md5");
+const bcrypt=require("bcrypt");
+const saltRound=10;
 
 //using app
 const app=express();
@@ -60,16 +62,22 @@ app.get("/logout",function(req,res){
 
 ///////////////////--Featching data from  Register submitted action--////////////
 app.post("/register",function(req,res){
-    const user=new User({
-        email: req.body.username,
-        password: md5(req.body.password)
-    });
-    user.save(function(err){
+    bcrypt.hash(req.body.password,saltRound,function(err,hashCode){
         if(!err){
-            console.log("You have successfully Registered");
-            res.render("secrets")
+            const user=new User({
+                email: req.body.username,
+                password: hashCode
+            });
+            user.save(function(err){
+                if(!err){
+                    console.log("You have successfully Registered");
+                    res.render("secrets")
+                }else{
+                    console.log("Something went wrong when try to Register"+err);
+                }
+            });
         }else{
-            console.log("Something went wrong when try to Register"+err);
+            console.log(err);
         }
     });
 });
@@ -77,20 +85,21 @@ app.post("/register",function(req,res){
 //////////////////--Featching data from  login submitted action--///////////
 app.post("/login",function(req,res){
     const newEmail=req.body.username;
-    const newPassword=md5(req.body.password);
+    const newPassword=req.body.password;
     User.findOne({email:newEmail},function(err,found){
         if(err){
             console.log(err);
         }
         else{
             if(found){
-                if(found.password===newPassword){
-                    res.render("secrets");
-                }else{
-                    console.log("User not found");
-                }
-            }
-            else{
+                bcrypt.compare(newPassword,found.password,function(err,result){
+                    if(result===true){
+                        res.render("secrets");
+                    }else{
+                        console.log("User not found");
+                    }
+                });
+            }else{
                 console.log("User not found");
             }
         }
