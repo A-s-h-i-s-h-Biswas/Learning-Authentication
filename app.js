@@ -4,7 +4,8 @@ const express=require("express");
 const ejs=require("ejs");
 const bodyParser=require("body-parser");
 const mongoose=require("mongoose");
-const momgooseEncryption=require("mongoose-encryption");
+// const momgooseEncryption=require("mongoose-encryption");
+const md5=require("md5");
 
 //using app
 const app=express();
@@ -22,7 +23,7 @@ const userSchema=new mongoose.Schema({
     password: String
 });
 
-userSchema.plugin(momgooseEncryption,{secret:process.env.SECRET,encryptedFields:["password"]});
+// userSchema.plugin(momgooseEncryption,{secret:process.env.SECRET,encryptedFields:["password"]});
 const User=mongoose.model("user",userSchema);
 
 ////////////////////GETTING REQUEST TO ACCESS THE PAGES/////////////////
@@ -61,7 +62,7 @@ app.get("/logout",function(req,res){
 app.post("/register",function(req,res){
     const user=new User({
         email: req.body.username,
-        password: req.body.password
+        password: md5(req.body.password)
     });
     user.save(function(err){
         if(!err){
@@ -76,7 +77,7 @@ app.post("/register",function(req,res){
 //////////////////--Featching data from  login submitted action--///////////
 app.post("/login",function(req,res){
     const newEmail=req.body.username;
-    const newPassword=req.body.password;
+    const newPassword=md5(req.body.password);
     User.findOne({email:newEmail},function(err,found){
         if(err){
             console.log(err);
